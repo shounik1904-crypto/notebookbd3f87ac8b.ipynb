@@ -1,1 +1,133 @@
+# -----------------------------------------------
+# COVID-19 EARLY CASE TREND ANALYSIS
+# Minor Project – HealthGuard Analytics Pvt. Ltd.
+# -----------------------------------------------
 
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# For regression
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score
+
+# -----------------------------------------------
+# 1. LOAD DATA
+# -----------------------------------------------
+
+df = pd.read_csv("/content/covid_data.csv")
+
+print("\nFirst 5 rows:")
+print(df.head())
+
+print("\nDataset Info:")
+print(df.info())
+
+print("\nMissing Values:")
+print(df.isna().sum())
+
+# -----------------------------------------------
+# 2. CLEANING & FEATURE ENGINEERING
+# -----------------------------------------------
+
+# Convert dates to datetime
+date_cols = ["confirmed_date", "released_date", "deceased_date"]
+for col in date_cols:
+    df[col] = pd.to_datetime(df[col], errors="coerce")
+
+# Calculate age
+df["age"] = 2020 - df["birth_year"]
+
+# Calculate recovery duration (for released cases)
+df["recovery_days"] = (df["released_date"] - df["confirmed_date"]).dt.days
+
+# -----------------------------------------------
+# 3. EXPLORATORY DATA ANALYSIS
+# -----------------------------------------------
+
+# Gender distribution
+plt.figure(figsize=(5,4))
+sns.countplot(x="sex", data=df)
+plt.title("Gender Distribution")
+plt.show()
+
+# Age distribution
+plt.figure(figsize=(7,4))
+sns.histplot(df["age"], bins=30, kde=True)
+plt.title("Age Distribution")
+plt.show()
+
+# Regional impact
+plt.figure(figsize=(10,5))
+df["region"].value_counts().plot(kind="bar")
+plt.title("Cases by Region")
+plt.xlabel("Region")
+plt.ylabel("Count")
+plt.show()
+
+# Infection reasons
+plt.figure(figsize=(10,5))
+df["infection_reason"].value_counts().head(10).plot(kind="barh")
+plt.title("Top Infection Sources")
+plt.xlabel("Count")
+plt.show()
+
+# Recovery Timeline Distribution
+plt.figure(figsize=(7,4))
+sns.histplot(df["recovery_days"], bins=30, kde=True)
+plt.title("Recovery Duration Distribution")
+plt.xlabel("Days")
+plt.show()
+
+# -----------------------------------------------
+# 4. DESCRIPTIVE STATISTICS & INSIGHTS
+# -----------------------------------------------
+
+print("\nAge Statistics:")
+print(df["age"].describe())
+
+print("\nRecovery Days Stats:")
+print(df["recovery_days"].describe())
+
+print("\nRegional Case Summary:")
+print(df["region"].value_counts())
+
+# -----------------------------------------------
+# 5. CORRELATION ANALYSIS
+# -----------------------------------------------
+
+corr_cols = ["age", "contact_number", "infection_order", "recovery_days"]
+print("\nCorrelation Matrix:")
+print(df[corr_cols].corr())
+
+sns.heatmap(df[corr_cols].corr(), annot=True, cmap="Blues")
+plt.title("Correlation Heatmap")
+plt.show()
+
+# -----------------------------------------------
+# 6. LINEAR REGRESSION (OPTIONAL)
+# Predicting Recovery Time
+# -----------------------------------------------
+
+model_df = df[["age", "contact_number", "infection_order", "recovery_days"]].dropna()
+
+X = model_df[["age", "contact_number", "infection_order"]]
+y = model_df["recovery_days"]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+lr = LinearRegression()
+lr.fit(X_train, y_train)
+
+y_pred = lr.predict(X_test)
+
+print("\nRegression Coefficients:", lr.coef_)
+print("Intercept:", lr.intercept_)
+print("R2 Score:", r2_score(y_test, y_pred))
+
+# -----------------------------------------------
+# END OF PROJECT
+# -----------------------------------------------
+print("\n--- Project Completed Successfully ---")
